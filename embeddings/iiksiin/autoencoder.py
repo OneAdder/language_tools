@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.7
 
-from iiksiin import Alphabet, TensorProductRepresentation
+from .iiksiin import Alphabet, TensorProductRepresentation
 import logging
 import torch  # type: ignore
 import torch.nn  # type: ignore

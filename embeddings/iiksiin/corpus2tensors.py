@@ -5,9 +5,9 @@ import gzip
 import logging
 import torch     # type: ignore
 import sys
-from typing import Dict, List, Callable, Tuple, Set, Mapping, Iterable, Iterator
+from typing import Dict, List, Callable, Tuple, Set, Mapping, Iterable, Iterator, Union
 import unicodedata
-from iiksiin import *
+from .iiksiin import *
 
 """Implements Tensor Product Representation for potentially multi-morphemic words.
 
@@ -37,14 +37,14 @@ if sys.version_info < (3, 7):
 def main(
     max_characters: int,
     max_morphemes: int,
-    alphabet_file: str,
+    alphabet_file: Union[str, Alphabet],
     end_of_morpheme_symbol: str,
     morpheme_delimiter: str,
-    input_file: str,
+    input_file: Union[str, Iterable[str]],
     output_file: str,
     verbose: int,
     blacklist_char: str,
-) -> None:
+) -> Dict[str, torch.Tensor]:
 
     import pickle
 
@@ -54,9 +54,11 @@ def main(
             + "(see Unicode Standard Annex #29)."
         )
 
-    
-    with open(alphabet_file, "rb") as f:
-        alphabet: Alphabet = pickle.load(f)
+    if isinstance(alphabet_file, Alphabet):
+        alphabet = alphabet_file
+    else:
+        with open(alphabet_file, "rb") as f:
+            alphabet: Alphabet = pickle.load(f)
 
     with (sys.stdin if input_file == "-" else open(input_file)) as input_source:
 
@@ -101,7 +103,7 @@ def main(
                                     logging.warning(f"Line {number} - unable to process morpheme {morpheme} (length {len(morpheme)}) of {word}")
 #                                    elif isinstance(e, AssertionError):
 #                                        logging.warning(f"Line {number} - unable to reconstruct morpheme {morpheme} (length {len(morpheme)}) of {word} from tensor representation")
-                                    
+
                                     skipped_morphemes.add(morpheme)
 #                                    raise e
 
@@ -110,6 +112,7 @@ def main(
             logging.info(f"...done writing binary file to disk at {output}", file=sys.stderr)
 
             logging.info(f"Failed to process {len(skipped_morphemes)} morphemes:\n"+"\n".join(skipped_morphemes))
+    return result
 
 if __name__ == "__main__":
 

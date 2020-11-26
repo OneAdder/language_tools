@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.7
 
-from iiksiin import Alphabet, Dimension
+from .iiksiin import Alphabet, Dimension
 import grapheme # type: ignore
 import logging
 import pickle
