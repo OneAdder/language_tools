@@ -1,6 +1,7 @@
 import tempfile
 import pickle
 import torch
+import numpy
 from typing import Dict, Iterable, List, Optional, Union
 
 from embeddings.iiksiin.autoencoder import (
@@ -24,6 +25,7 @@ class Iiksiin:
         self.device: int = 0 if torch.cuda.is_available() else -1
         self.model: Optional[Autoencoder] = None
         self.vectors: Optional[Dict[str, List[float]]] = None
+        self.embeddings = None
 
     @staticmethod
     def _wrap_symbol(symbol: str) -> str:
@@ -41,7 +43,7 @@ class Iiksiin:
         with tempfile.NamedTemporaryFile('wt') as input_file,\
                 tempfile.NamedTemporaryFile('wb+') as output_file:
             input_file.write('\n'.join(self.corpus))
-            input_fname = f.name
+            input_fname = input_file.name
             output_fname = output_file.name
             self.tensors = c2t_main(
                 max_characters, max_morphemes, self.alphabet,
@@ -84,6 +86,37 @@ class Iiksiin:
         self.vectors = \
             self.model.run_t2v(self._data, self._batch_size, self.device)
 
+    def embed(self):
+        already_taken = {}
+        unique = 0
+        res = []
+        for sent in self.corpus:
+            for word in sent.split():
+                for segm in word.split(">"):
+                    if len(segm) == 0:
+                        continue
+                    try:
+                        _ = already_taken[segm]
+                        continue
+                    except KeyError:
+                        try:
+                            vect = self.vectors[segm]
+                            res.append(vect)
+                        except KeyError:
+                            unique += 1
+                            vect = numpy.array([0.0] * 64)
+                            for char in list(segm):
+                                try:
+                                    c_vect = numpy.array(self.vectors[char])
+                                    vect += c_vect
+                                except KeyError:
+                                    continue
+                            vect /= len(list(segm))
+                            res.append(vect.tolist())
+                        already_taken[segm] = True
+        self.embeddings = res
+        return unique
+
     def run(self, model_output_path=None, vectors_output_path=None):
         """Run pipeline with default values"""
         self.generate_alphabet('alphabet', self.corpus)
@@ -91,6 +124,7 @@ class Iiksiin:
         self.init_model()
         self.train_model(output_path=model_output_path)
         self.generate_vectors()
+        self.embed()
         if vectors_output_path:
             with open(vectors_output_path, 'wb') as f:
-                pickle.dump(self.vectors, f)
+                pickle.dump(self.embeddings, f)
