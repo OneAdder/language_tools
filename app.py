@@ -32,7 +32,7 @@ RUN_GENERATION = partial(
 
 app = Flask(__name__)
 
-myNCRFpp = NCRFpp("models/ncrfpp", "ru_standard_v4", "results", 10)
+myNCRFpp = NCRFpp("models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
 
 def tokenize(input_text: str) -> List[str]:
     curr_time = time.time_ns()
