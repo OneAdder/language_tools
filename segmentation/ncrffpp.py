@@ -191,6 +191,14 @@ class NCRFpp(object):
         if segmentor_proc.returncode != 0:
             print("FUCK IT")
 
+    def delete_corpus_files(self, *args):
+        for arg in args:
+            os.remove(self.corpus_home.joinpath(arg))
+
+    def delete_results_files(self, *args):
+        for arg in args:
+            os.remove(self.out_folder.joinpath(arg))
+
     # делаем из bmes слова из сегментов
     def convert_bmes_to_words(self, segmented_corpus_path, segmented_corpus_words_path):
         segmented_words = []

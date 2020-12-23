@@ -50,7 +50,8 @@ def tokenize(input_text: str) -> List[str]:
     res_file_name = f"res_{curr_time}"
     myNCRFpp.convert_bmes_to_words(decode_file_path, res_file_name)
     results = myNCRFpp.convert_words_to_strings(file_name, res_file_name)
-    print(results)
+    myNCRFpp.delete_corpus_files(file_name, raw_file_name, res_file_name)
+    myNCRFpp.delete_results_files(decode_config_path, decode_file_path)
     return re.split(r"[ >]", results[0])
 
 
