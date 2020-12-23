@@ -1,4 +1,3 @@
-models/ncrfpp/results/model.*
 .idea
 venv
 segmentation/__pycache__/
