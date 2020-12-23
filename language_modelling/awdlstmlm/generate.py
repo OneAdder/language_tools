@@ -8,9 +8,8 @@
 import argparse
 
 import torch
-from torch.autograd import Variable
 
-import data
+from language_modelling.awdlstmlm import data
 
 parser = argparse.ArgumentParser(description='PyTorch PTB Language Model')
 
@@ -33,24 +32,18 @@ parser.add_argument('--temperature', type=float, default=1.0,
                     help='temperature - higher will increase diversity')
 parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
+parser.add_argument('--input', type=str, default='')
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
-    if not args.cuda:
-        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-    else:
+    if args.cuda:
         torch.cuda.manual_seed(args.seed)
-
-if args.temperature < 1e-3:
-    parser.error("--temperature has to be greater or equal 1e-3")
 
 with open(args.checkpoint, 'rb') as f:
     model, _, _ = torch.load(f)
 model.eval()
-if args.model == 'QRNN':
-    model.reset()
 
 if args.cuda:
     model.cuda()
@@ -60,41 +53,27 @@ else:
 corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 
-lines = []
-with open(args.data + 'test.txt', 'r') as test:
-    lines = test.readlines()
-lines = [line for line in lines if line.strip() != '']
-first_line = lines[0].split() + ['<eos>']
-first_word = first_line[0]
+user_input = args.input.split(",")
+user_input = torch.tensor([[corpus.dictionary.word2idx[token] for token in user_input]])
 
-# input = Variable(torch.rand(1, 1).mul(ntokens).long(), volatile=True)
-input = torch.tensor([[corpus.dictionary.word2idx[first_word]]])
 if args.cuda:
-    input.data = input.data.cuda()
+    user_input.data = user_input.data.cuda()
 hidden = model.init_hidden(1)
 
 success = 0
 error = 0
 wpa = 0
 
-with open(args.outf, 'a') as outf:
-    for line in lines:
-        tokens = line.split() + ['<eos>']
-        for token in tokens[1:]:
-            output, hidden = model(input, hidden)
-            word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
-            word_idx = torch.multinomial(word_weights, 1)[0]
-            input.data.fill_(corpus.dictionary.word2idx[token])
-            try:
-                word = corpus.dictionary.idx2word[word_idx]
-            except:
-                word = '<unk>'
-            print(word, token)
+result = []
 
-            if word == token:
-                success +=  1
-            else:
-                error += 1
+for i in range(args.words):
+    output, hidden = model(user_input, hidden)
+    word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
+    word_idx = torch.multinomial(word_weights, 1)[0]
+    user_input.data.fill_(word_idx)
+    word = corpus.dictionary.idx2word.get([word_idx])
+    if word is None or word == '<eos>':
+        break
+    result.append(word)
 
-        wpa = success / (success + error)
-    outf.write('\n' + args.checkpoint + ': ' + str(wpa))
+print(','.join(result))

@@ -7,15 +7,18 @@ from time import time_ns
 from typing import List
 from flask import abort, Flask, jsonify, request
 from segmentation.ncrffpp import NCRFpp
+import re
 
 HOST = '127.0.0.1:5000'
 PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
 _ROOT = pathlib.Path(__file__).parent.resolve()
 ROOT = str(_ROOT)
-UPLOADS = _ROOT / 'uploads'
+UPLOADS = _ROOT / 'models' / 'ncrfpp' / 'corpus_home'
 if not UPLOADS.exists():
     UPLOADS.mkdir()
 
+
+import time
 
 RUN_GENERATION = partial(
     '{python} generate.py '
@@ -29,13 +32,25 @@ RUN_GENERATION = partial(
 
 app = Flask(__name__)
 
+myNCRFpp = NCRFpp("models/ncrfpp", "ru_standard_v4", "results", 10)
 
 def tokenize(input_text: str) -> List[str]:
-    path = UPLOADS / str(time_ns())
+    curr_time = time.time_ns()
+    file_name = str(curr_time)
+    path = UPLOADS / file_name
     with open(path, 'w') as f:
         f.write(input_text)
-    ncrffpp = NCRFpp('', '', '', '')
-    return ncrffpp.decode('')
+
+    raw_file_name = f"raw_{curr_time}"
+    myNCRFpp.make_raw(file_name, raw_file_name)
+    decode_file_path = f"results_{curr_time}"
+    decode_config_path = f"config_{curr_time}"
+    myNCRFpp.load_model("model.571.model", "model.dset", decode_file_path, decode_config_path, raw_file_name)
+    myNCRFpp.decode(PYTHON, ROOT, decode_config_path)
+    res_file_name = f"res_{curr_time}"
+    myNCRFpp.convert_bmes_to_words(decode_file_path, res_file_name)
+    results = myNCRFpp.convert_words_to_strings(res_file_name)
+    return re.split(r"(>|\s)", results[0])
 
 
 def get_prediction(input_text: str) -> str:
@@ -63,4 +78,5 @@ def get_suggestions():
 
 
 if __name__ == '__main__':
-    waitress.serve(app, listen=HOST)
+    # waitress.serve(app, listen=HOST)
+    print(tokenize("Амаравкэваратэн таа’койӈын."))

@@ -10,8 +10,6 @@ from sklearn.model_selection import train_test_split
 
 from string import punctuation
 
-from .. import PYTHON, ROOT
-
 
 def process_line(line):
     return "".join(ch.lower() + " S-MORPH\n" if ch != " " else "\n\n" for ch in line if ch not in punctuation)
@@ -52,7 +50,10 @@ class NCRFpp(object):
 
         self.sentences = []
 
-    def make_config_templates(self):
+        self._make_config_templates()
+        self._fill_corpus_data()
+
+    def _make_config_templates(self):
         self.config_template = '''train_dir={train_path}
         dev_dir={test_path}
         test_dir={test_path}
@@ -88,7 +89,7 @@ class NCRFpp(object):
         dset_dir={dset_dir}
         load_model_dir={model_dir}'''
 
-    def fill_corpus_data(self):
+    def _fill_corpus_data(self):
         with open(self.corpus_home.joinpath(self.corpus_name)) as corpus_file:
             self.sentences = [line.rstrip() for line in corpus_file]
 
@@ -141,15 +142,15 @@ class NCRFpp(object):
                 with open(fraction_path, "w") as file:
                     file.writelines(label(word) + "\n" for word in fraction)
 
-    def make_raw(self, corpus_raw_name):
-        with open(self.corpus_home.joinpath(self.corpus_name)) as txt_corpus, \
+    def make_raw(self, data_to_segment, corpus_raw_name):
+        with open(self.corpus_home.joinpath(data_to_segment)) as txt_corpus, \
                 open(self.corpus_home.joinpath(corpus_raw_name), "w") as raw_file:
             for line in txt_corpus:
                 raw_file.write(process_line(line.strip()) + "\n\n.\n\n")
 
     # обучение одного фолда
     def fit(self, fold_number):
-        # в ноутбуке здесь "!python NCRFpp/main.py --config segmentation/fold_1/hparams.config > segmentation/fold_1/log.log"
+        # в ноутбуке здесь "!python ncrfpp_project/main.py --config segmentation/fold_1/hparams.config > segmentation/fold_1/log.log"
         # то есть вызываем для конфига self.cwd/fold_i/hparams.config (fold_i = "fold" + fold_number)
         # для логов self.cwd /fold_i/log.log
         # из логов потом найдем номер эпохи, на которой была лучшая метрика
@@ -181,11 +182,13 @@ class NCRFpp(object):
             config_file.write(self.decode_config_template.format(**config_params))
 
     # создает в decode_dir(см. выше) файл segmented_corpus_path формата .bmes
-    def decode(self, decode_config_path):
-        # в ноутбуке здесь "!python NCRFpp/main.py --config self.out_folder/decode_config_path"
+    def decode(self, PYTHON, ROOT, decode_config_path):
+        # в ноутбуке здесь "!python ncrfpp_project/main.py --config self.out_folder/decode_config_path"
         segmentor_proc = subprocess.run(
-            f'{PYTHON} {ROOT}/NCRFpp/main.py --config {self.out_folder}/decode_config_path',
+            f'{PYTHON} {ROOT}/segmentation/ncrfpp_project/main.py --config {self.out_folder}/{decode_config_path}',
             shell=True)
+        if segmentor_proc.returncode != 0:
+            print("FUCK IT")
 
     # делаем из bmes слова из сегментов
     def convert_bmes_to_words(self, segmented_corpus_path, segmented_corpus_words_path):
@@ -216,6 +219,34 @@ class NCRFpp(object):
                 segmented_words.append(word.strip(">").replace(">>", ">") + "\n")
         with open(segmented_corpus_words_path, "w") as f:
             f.writelines(segmented_words)
+
+    def convert_words_to_strings(self, segmented_corpus_words_path):
+        with open(self.corpus_home.joinpath(self.corpus_name)) as corpus_file:
+            original = corpus_file.read()
+        original = original.replace('—', '')
+        original = original.replace('>', '')
+        original = original.split('\n')
+        sent2word = []
+        for sent in original:
+            sent2word.append(sent.split())
+        with open(segmented_corpus_words_path) as corpus_file:
+            segmented = corpus_file.read()
+        segmented = segmented.replace('—', '')
+        segmented = segmented.split('\n')
+        segmented_sents = []
+        i = 0
+        for sent in sent2word:
+            j = 0
+            sentence = ''
+            while j < len(sent):
+                if j != len(sent) - 1:
+                    sentence += segmented[i] + ' '
+                else:
+                    sentence += segmented[i]
+                j += 1
+                i += 1
+            segmented_sents.append(sentence)
+        return segmented_sents
 
     # делаем из слов с сегментами предложения, сразу train и test
     # код дашин, если что :о)
@@ -256,6 +287,6 @@ class NCRFpp(object):
             f.writelines(X_val)
 
 
-# m = NCRFpp("corpus", "corpus_v5.txt", "res", 10)
+# m = ncrfpp_project("corpus", "corpus_v5.txt", "res", 10)
 # m.convert_bmes_to_words("corpus_v5_segmented.bmes", "res/corpus_v5_words.txt")
 # m.convert_words_to_sents("res/corpus_v5_words.txt", "res/train.txt", "res/test.txt", "res/val.txt")

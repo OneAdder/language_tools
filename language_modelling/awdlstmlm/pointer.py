@@ -6,10 +6,10 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-import data
-import model
+from language_modelling.awdlstmlm import data
+from language_modelling.awdlstmlm import model
 
-from utils import batchify, get_batch, repackage_hidden
+from language_modelling.awdlstmlm.utils import batchify, get_batch, repackage_hidden
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='data/penn',

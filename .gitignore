@@ -1,0 +1,6 @@
+models/ncrfpp/results/model.*
+.idea
+venv
+segmentation/__pycache__/
+segmentation/res
+segmentation/corpus

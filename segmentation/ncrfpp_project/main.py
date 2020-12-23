@@ -15,10 +15,10 @@ import json
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from utils.metric import get_ner_fmeasure
-from model.seqlabel import SeqLabel
-from model.sentclassifier import SentClassifier
-from utils.data import Data
+from segmentation.ncrfpp_project.utils.metric import get_ner_fmeasure
+from segmentation.ncrfpp_project.model.seqlabel import SeqLabel
+from segmentation.ncrfpp_project.model.sentclassifier import SentClassifier
+from segmentation.ncrfpp_project.utils.data import Data
 
 try:
     import cPickle as pickle
