@@ -174,6 +174,7 @@ class NCRFpp(object):
     # запуск модели делается с использованием конфига, из которого читаются нужные параметры
     # так что загрузить старую модель = написать корректный конфиг
     def load_model(self, model_path, dset_path, segmented_corpus_path, decode_config_path, corpus_raw_name):
+        Path(self.out_folder.joinpath(segmented_corpus_path).absolute()).touch()
         config_params = {"model_dir": self.out_folder.joinpath(model_path).absolute(),
                          "dset_dir": self.out_folder.joinpath(dset_path).absolute(),
                          "decode_dir": self.out_folder.joinpath(segmented_corpus_path).absolute(),
@@ -186,7 +187,7 @@ class NCRFpp(object):
         # в ноутбуке здесь "!python ncrfpp_project/main.py --config self.out_folder/decode_config_path"
         segmentor_proc = subprocess.run(
             f'{PYTHON} {ROOT}/segmentation/ncrfpp_project/main.py --config {self.out_folder}/{decode_config_path}',
-            shell=True)
+            shell=True, capture_output=True)
         if segmentor_proc.returncode != 0:
             print("FUCK IT")
 

@@ -33,6 +33,7 @@ app = Flask(__name__)
 myNCRFpp = NCRFpp(_ROOT / "models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
 
 
+
 def tokenize(input_text: str) -> List[str]:
     curr_time = time_ns()
     file_name = str(curr_time)

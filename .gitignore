@@ -3,3 +3,5 @@ venv
 segmentation/__pycache__/
 segmentation/res
 segmentation/corpus
+segmentation/ncrfpp_project/model/__pycache__/
+segmentation/ncrfpp_project/utils/__pycache__/
