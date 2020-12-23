@@ -51,7 +51,7 @@ def tokenize(input_text: str) -> List[str]:
     myNCRFpp.convert_bmes_to_words(decode_file_path, res_file_name)
     results = myNCRFpp.convert_words_to_strings(file_name, res_file_name)
     print(results)
-    return re.split(r"(>|\s)", results[0])
+    return re.split(r"[ >]", results[0])
 
 
 def get_prediction(input_text: str) -> str:

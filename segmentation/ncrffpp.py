@@ -218,7 +218,7 @@ class NCRFpp(object):
                     continue
             if word != '':
                 segmented_words.append(word.strip(">").replace(">>", ">") + "\n")
-        with open(segmented_corpus_words_path, "w") as f:
+        with open(self.corpus_home.joinpath(segmented_corpus_words_path), "w") as f:
             f.writelines(segmented_words)
 
     def convert_words_to_strings(self, original_text, segmented_corpus_words_path):
@@ -230,7 +230,7 @@ class NCRFpp(object):
         sent2word = []
         for sent in original:
             sent2word.append(sent.split())
-        with open(segmented_corpus_words_path) as corpus_file:
+        with open(self.corpus_home.joinpath(segmented_corpus_words_path)) as corpus_file:
             segmented = corpus_file.read()
         segmented = segmented.replace('—', '')
         segmented = segmented.split('\n')
