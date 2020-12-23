@@ -1,4 +1,6 @@
+import os
 import re
+import subprocess
 from pathlib import Path
 from collections import Counter
 import pandas as pd
@@ -7,6 +9,8 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 
 from string import punctuation
+
+from .. import PYTHON, ROOT
 
 
 def process_line(line):
@@ -179,7 +183,9 @@ class NCRFpp(object):
     # создает в decode_dir(см. выше) файл segmented_corpus_path формата .bmes
     def decode(self, decode_config_path):
         # в ноутбуке здесь "!python NCRFpp/main.py --config self.out_folder/decode_config_path"
-        pass
+        segmentor_proc = subprocess.run(
+            f'{PYTHON} {ROOT}/NCRFpp/main.py --config {self.out_folder}/decode_config_path',
+            shell=True)
 
     # делаем из bmes слова из сегментов
     def convert_bmes_to_words(self, segmented_corpus_path, segmented_corpus_words_path):
