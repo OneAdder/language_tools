@@ -18,8 +18,6 @@ if not UPLOADS.exists():
     UPLOADS.mkdir()
 
 
-import time
-
 RUN_GENERATION = partial(
     '{python} generate.py '
     '--data {root}/data/chukchi_chars/ '
@@ -32,10 +30,11 @@ RUN_GENERATION = partial(
 
 app = Flask(__name__)
 
-myNCRFpp = NCRFpp("models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
+myNCRFpp = NCRFpp(_ROOT / "models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
+
 
 def tokenize(input_text: str) -> List[str]:
-    curr_time = time.time_ns()
+    curr_time = time_ns()
     file_name = str(curr_time)
     path = UPLOADS / file_name
     with open(path, 'w') as f:
@@ -45,7 +44,8 @@ def tokenize(input_text: str) -> List[str]:
     myNCRFpp.make_raw(file_name, raw_file_name)
     decode_file_path = f"results_{curr_time}"
     decode_config_path = f"config_{curr_time}"
-    myNCRFpp.load_model("model.571.model", "model.dset", decode_file_path, decode_config_path, raw_file_name)
+    myNCRFpp.load_model("model.571.model", "model.dset", decode_file_path,
+                        decode_config_path, raw_file_name)
     myNCRFpp.decode(PYTHON, ROOT, decode_config_path)
     res_file_name = f"res_{curr_time}"
     myNCRFpp.convert_bmes_to_words(decode_file_path, res_file_name)
