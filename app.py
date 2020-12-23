@@ -32,7 +32,7 @@ app = Flask(__name__)
 
 def tokenize(input_text: str) -> List[str]:
     path = UPLOADS / str(time_ns())
-    with open(path) as f:
+    with open(path, 'w') as f:
         f.write(input_text)
     ncrffpp = NCRFpp('', '', '', '')
     return ncrffpp.decode('')
