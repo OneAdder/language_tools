@@ -5,9 +5,11 @@ import waitress
 from functools import partial
 from typing import List
 from flask import abort, Flask, jsonify, request
-from . import PYTHON, ROOT
 from segmentation.ncrffpp import NCRFpp
 
+HOST = '127.0.0.1:5000'
+PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
+ROOT = str(pathlib.Path(__file__).parent.resolve())
 RUN_GENERATION = partial(
     '{python} generate.py '
     '--data {root}/data/chukchi_chars/ '
@@ -51,4 +53,4 @@ def get_suggestions():
 
 
 if __name__ == '__main__':
-    waitress.serve(app, listen='127.0.0.1:5000')
+    waitress.serve(app, listen=HOST)
