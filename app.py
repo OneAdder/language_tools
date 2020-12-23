@@ -3,13 +3,20 @@ import pathlib
 import subprocess
 import waitress
 from functools import partial
+from time import time_ns
 from typing import List
 from flask import abort, Flask, jsonify, request
 from segmentation.ncrffpp import NCRFpp
 
 HOST = '127.0.0.1:5000'
 PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
-ROOT = str(pathlib.Path(__file__).parent.resolve())
+_ROOT = pathlib.Path(__file__).parent.resolve()
+ROOT = str(_ROOT)
+UPLOADS = _ROOT / 'uploads'
+if not UPLOADS.exists():
+    UPLOADS.mkdir()
+
+
 RUN_GENERATION = partial(
     '{python} generate.py '
     '--data {root}/data/chukchi_chars/ '
@@ -24,6 +31,9 @@ app = Flask(__name__)
 
 
 def tokenize(input_text: str) -> List[str]:
+    path = UPLOADS / str(time_ns())
+    with open(path) as f:
+        f.write(input_text)
     ncrffpp = NCRFpp('', '', '', '')
     return ncrffpp.decode('')
 
