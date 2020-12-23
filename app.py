@@ -19,10 +19,10 @@ if not UPLOADS.exists():
 
 
 RUN_GENERATION = partial(
-    '{python} generate.py '
-    '--data {root}/data/chukchi_chars/ '
-    '--checkpoint {root}/data/chukchi_model.pt'
-    '--input {tokens}'
+    '{python} {root}/language_modelling/awdlstmlm/generate.py '
+    '--data {root}/models/awdlstm/chukchi_segments/ '
+    '--checkpoint {root}/models/awdlstm/chukchi_model.pt '
+    '--input {tokens} '
     '--cuda --words {words}'.format,
     python=PYTHON,
     root=ROOT,
@@ -80,5 +80,4 @@ def get_suggestions():
 
 
 if __name__ == '__main__':
-    # waitress.serve(app, listen=HOST)
-    print(tokenize("Амаравкэваратэн таа’койӈын."))
+    waitress.serve(app, listen=HOST)

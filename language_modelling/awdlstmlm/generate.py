@@ -50,15 +50,21 @@ if args.cuda:
 else:
     model.cpu()
 
-corpus = data.Corpus(args.data)
+corpus = data.Corpus(args.data, args.cuda)
 ntokens = len(corpus.dictionary)
 
-user_input = args.input.split(",")
-user_input = torch.tensor([[corpus.dictionary.word2idx[token] for token in user_input]])
+user_input_tokens = args.input.split(",")
+user_input = []
+for token in user_input_tokens:
+    idx = corpus.dictionary.word2idx.get(token)
+    if idx is None:
+        continue
+    user_input.append(idx)
+user_input = torch.tensor([user_input])
 
 if args.cuda:
     user_input.data = user_input.data.cuda()
-hidden = model.init_hidden(1)
+hidden = model.init_hidden(user_input.size()[1])
 
 success = 0
 error = 0
@@ -70,9 +76,12 @@ for i in range(args.words):
     output, hidden = model(user_input, hidden)
     word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
     word_idx = torch.multinomial(word_weights, 1)[0]
-    user_input.data.fill_(word_idx)
-    word = corpus.dictionary.idx2word.get([word_idx])
-    if word is None or word == '<eos>':
+    user_input.data.fill_(word_idx[0])
+    try:
+        word = corpus.dictionary.idx2word[word_idx[0]]
+    except IndexError:
+        break
+    if word == '<eos>':
         break
     result.append(word)
 
