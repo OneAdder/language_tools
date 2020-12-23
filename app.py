@@ -33,7 +33,6 @@ app = Flask(__name__)
 myNCRFpp = NCRFpp(_ROOT / "models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
 
 
-
 def tokenize(input_text: str) -> List[str]:
     curr_time = time_ns()
     file_name = str(curr_time)
@@ -50,7 +49,8 @@ def tokenize(input_text: str) -> List[str]:
     myNCRFpp.decode(PYTHON, ROOT, decode_config_path)
     res_file_name = f"res_{curr_time}"
     myNCRFpp.convert_bmes_to_words(decode_file_path, res_file_name)
-    results = myNCRFpp.convert_words_to_strings(res_file_name)
+    results = myNCRFpp.convert_words_to_strings(file_name, res_file_name)
+    print(results)
     return re.split(r"(>|\s)", results[0])
 
 
