@@ -1,13 +1,14 @@
 import os
 import pathlib
+import re
 import subprocess
+import tempfile
 import waitress
 from functools import partial
 from time import time_ns
 from typing import List
 from flask import abort, Flask, jsonify, request
 from segmentation.ncrffpp import NCRFpp
-import re
 
 HOST = '127.0.0.1:5000'
 PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
@@ -23,6 +24,7 @@ RUN_GENERATION = partial(
     '--data {root}/models/awdlstm/chukchi_segments/ '
     '--checkpoint {root}/models/awdlstm/chukchi_model.pt '
     '--input {tokens} '
+    '--outf {outf} '
     '--cuda --words {words}'.format,
     python=PYTHON,
     root=ROOT,
@@ -57,11 +59,13 @@ def tokenize(input_text: str) -> List[str]:
 
 def get_prediction(input_text: str) -> str:
     tokens = tokenize(input_text)
-    generate_proc = subprocess.run(
-        RUN_GENERATION(tokens=",".join(tokens), words=5),
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    tmp = tempfile.NamedTemporaryFile()
+    subprocess.run(
+        RUN_GENERATION(tokens=",".join(tokens), words=5, outf=tmp.name),
+        shell=True, capture_output=True,
     )
-    result = generate_proc.stdout.decode('utf-8')
+    with open(tmp.name) as f:
+        result = f.read()
     return result
 
 
@@ -76,7 +80,7 @@ def get_suggestions():
     if not input_text:
         abort(405, 'В запросе нет поля `text` или оно пустое')
     result = get_prediction(input_text)
-    return jsonify({'suggestions': [result]})
+    return jsonify({'suggestions': result.split(',')})
 
 
 if __name__ == '__main__':

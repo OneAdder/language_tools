@@ -85,4 +85,5 @@ for i in range(args.words):
         break
     result.append(word)
 
-print(','.join(result))
+with open(args.outf, 'w') as f:
+    f.write(','.join(result))
