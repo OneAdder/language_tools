@@ -57,7 +57,7 @@ def get_prediction(input_text: str) -> str:
     tokens = tokenize(input_text)
     generate_proc = subprocess.run(
         RUN_GENERATION(tokens=",".join(tokens), words=5),
-        shell=True, stdout=subprocess.PIPE,
+        shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
     result = generate_proc.stdout.decode('utf-8')
     return result
