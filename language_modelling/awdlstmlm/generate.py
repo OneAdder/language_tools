@@ -72,16 +72,17 @@ wpa = 0
 
 result = []
 
-output, hidden = model(user_input, hidden)
-word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
-idx = torch.multinomial(word_weights, args.words)
-for id in idx:
+for i in range(args.words):
+    output, hidden = model(user_input, hidden)
+    word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
+    word_idx = torch.multinomial(word_weights, 1)[0]
+    user_input.data.fill_(word_idx[0])
     try:
-        word = corpus.dictionary.idx2word[id.item()]
+        word = corpus.dictionary.idx2word[word_idx[0]]
     except IndexError:
-        continue
+        break
     if word == '<eos>':
-        continue
+        break
     result.append(word)
 
 with open(args.outf, 'w') as f:
