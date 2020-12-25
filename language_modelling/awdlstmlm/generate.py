@@ -74,7 +74,7 @@ result = []
 
 output, hidden = model(user_input, hidden)
 word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
-_, idx = torch.topk(word_weights, args.data)
+idx = torch.multinomial(word_weights, args.words)
 for id in idx:
     try:
         word = corpus.dictionary.idx2word[id.item()]
