@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import re
@@ -7,10 +8,11 @@ import waitress
 from functools import partial
 from time import time_ns
 from typing import List
-from flask import abort, Flask, jsonify, request
+from flask import abort, Flask, jsonify, Response, request
+from flask_cors import CORS
 from segmentation.ncrffpp import NCRFpp
 
-HOST = '127.0.0.1:5000'
+HOST = '192.168.1.64:5000'
 PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
 _ROOT = pathlib.Path(__file__).parent.resolve()
 ROOT = str(_ROOT)
@@ -31,7 +33,7 @@ RUN_GENERATION = partial(
 )
 
 app = Flask(__name__)
-
+CORS(app)
 myNCRFpp = NCRFpp(_ROOT / "models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
 
 
@@ -60,13 +62,24 @@ def tokenize(input_text: str) -> List[str]:
 def get_prediction(input_text: str) -> str:
     tokens = tokenize(input_text)
     tmp = tempfile.NamedTemporaryFile()
-    subprocess.run(
+    p = subprocess.run(
         RUN_GENERATION(tokens=",".join(tokens), words=5, outf=tmp.name),
         shell=True, capture_output=True,
     )
+    if p.returncode != 0:
+        raise Exception('Генерация не отработала')
     with open(tmp.name) as f:
         result = f.read()
     return result
+
+
+@app.after_request
+def log_response(response: Response) -> Response:
+    logger = logging.getLogger('waitress')
+    info = ' {host} - {method} - {status}'.format(
+        host=request.host, method=request.method, status=response.status)
+    logger.info(info)
+    return response
 
 
 @app.route('/health')
@@ -84,4 +97,5 @@ def get_suggestions():
 
 
 if __name__ == '__main__':
-    waitress.serve(app, listen=HOST)
+    logging.getLogger('waitress').setLevel(logging.INFO)
+    waitress.serve(app, listen=HOST, threads=1)
