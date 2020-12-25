@@ -74,10 +74,10 @@ result = []
 
 output, hidden = model(user_input, hidden)
 word_weights = model.decoder(output).squeeze().data.div(args.temperature).exp().cpu()
-_, idx = torch.multinomial(word_weights, args.data)
+_, idx = torch.topk(word_weights, args.data)
 for id in idx:
     try:
-        word = corpus.dictionary.idx2word[id]
+        word = corpus.dictionary.idx2word[id.item()]
     except IndexError:
         continue
     if word == '<eos>':
