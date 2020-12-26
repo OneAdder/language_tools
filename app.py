@@ -76,8 +76,9 @@ def get_prediction(input_text: str) -> str:
 @app.after_request
 def log_response(response: Response) -> Response:
     logger = logging.getLogger('waitress')
-    info = ' {host} - {method} - {status}'.format(
-        host=request.host, method=request.method, status=response.status)
+    info = ' {host} {path} - {method} - {status}'.format(
+        host=request.host, method=request.method,
+        path=request.path, status=response.status)
     logger.info(info)
     return response
 
@@ -89,9 +90,11 @@ def health():
 
 @app.route('/get_suggestions', methods=['POST'])
 def get_suggestions():
+    logger = logging.getLogger('waitress')
     input_text = request.json.get('text')
     if not input_text:
         abort(405, 'В запросе нет поля `text` или оно пустое')
+    logger.info(' Запрос на генерацию принят в обработку')
     result = get_prediction(input_text)
     return jsonify({'suggestions': result.split(',')})
 
