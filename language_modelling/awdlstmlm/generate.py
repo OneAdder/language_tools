@@ -45,6 +45,7 @@ class Generator:
 
     def _load_corpus(self, corpus_path) -> Tuple[data.Corpus, int]:
         corpus = data.Corpus(corpus_path, self._cuda)
+        corpus.dictionary.add_word('<unk>')
         ntokens = len(corpus.dictionary)
         return corpus, ntokens
 
@@ -58,6 +59,8 @@ class Generator:
             for i in range(len(segmented_data)):
                 input_token = segmented_data[i]
                 idx = self._corpus.dictionary.word2idx.get(input_token)
+                if not idx:
+                    idx = self._corpus.dictionary.word2idx.get('<unk>')
                 input_idxs_tensor.data.fill_(idx)
                 output, hidden = self._model(input_idxs_tensor, hidden)
                 if i != len(segmented_data) - 1:
