@@ -1,36 +1,25 @@
+import sys
 import logging
 import os
 import pathlib
 import re
-import subprocess
-import tempfile
 import waitress
-from functools import partial
 from time import time_ns
 from typing import List
 from flask import abort, Flask, jsonify, Response, request
 from flask_cors import CORS
 from segmentation.ncrffpp import NCRFpp
+from language_modelling.awdlstmlm.generate import Generator
 
-HOST = '192.168.1.64:5000'
+HOST = '127.0.0.1:5000'#'192.168.1.64:5000'
 PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
 _ROOT = pathlib.Path(__file__).parent.resolve()
 ROOT = str(_ROOT)
 UPLOADS = _ROOT / 'models' / 'ncrfpp' / 'corpus_home'
+AWD_LSTM = _ROOT / 'models' / 'awdlstm'
+sys.path.append(str(_ROOT / 'language_modelling' / 'awdlstmlm'))
 if not UPLOADS.exists():
     UPLOADS.mkdir()
-
-
-RUN_GENERATION = partial(
-    '{python} {root}/language_modelling/awdlstmlm/generate.py '
-    '--data {root}/models/awdlstm/chukchi_segments/ '
-    '--checkpoint {root}/models/awdlstm/chukchi_model.pt '
-    '--input {tokens} '
-    '--outf {outf} '
-    '--cuda --words {words}'.format,
-    python=PYTHON,
-    root=ROOT,
-)
 
 app = Flask(__name__)
 CORS(app)
@@ -61,15 +50,13 @@ def tokenize(input_text: str) -> List[str]:
 
 def get_prediction(input_text: str) -> str:
     tokens = tokenize(input_text)
-    tmp = tempfile.NamedTemporaryFile()
-    p = subprocess.run(
-        RUN_GENERATION(tokens=",".join(tokens), words=5, outf=tmp.name),
-        shell=True, capture_output=True,
-    )
-    if p.returncode != 0:
+    g = Generator(model_path=AWD_LSTM / 'chukchi_model.pt',
+                  corpus_path=AWD_LSTM / 'chukchi_segments',
+                  cuda=False)
+    try:
+        result = g.generate(','.join(tokens), 5)
+    except Exception:
         raise Exception('Генерация не отработала')
-    with open(tmp.name) as f:
-        result = f.read()
     return result
 
 
