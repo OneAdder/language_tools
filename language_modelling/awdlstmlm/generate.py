@@ -41,7 +41,6 @@ class Generator:
         with open(self._model_path, 'rb') as f:
             model, _, _ = torch.load(f, map_location=self._device)
         model.eval()
-        model.cuda() if self._cuda else model.cpu()
         return model
 
     def _load_corpus(self, corpus_path) -> Tuple[data.Corpus, int]:
@@ -49,6 +48,15 @@ class Generator:
         corpus.dictionary.add_word('<unk>')
         ntokens = len(corpus.dictionary)
         return corpus, ntokens
+
+    def _resize_embs(self):
+        corpus_embs_size = len(self._corpus.dictionary.word2idx)
+        model_embs_size = len(self._model.encoder.num_embeddings)
+        diff = corpus_embs_size - model_embs_size
+        mean_emb = torch.mean(self._model.encoder.weight.data, 0)
+        for i in range(0, diff):
+            emb_copy = mean_emb.detach().clone()
+            self._model.encoder.weight.data = torch.cat((self._model.encoder.weight.data, emb_copy.unsqueeze(0)))
 
     def predict_nis(self, segmented_data, top_k=3):
         candidates = []
