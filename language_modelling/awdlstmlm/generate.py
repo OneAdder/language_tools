@@ -10,6 +10,7 @@ from typing import Tuple, Union
 from pathlib import Path
 
 import torch
+import random
 
 from language_modelling.awdlstmlm import data
 
@@ -36,7 +37,6 @@ class Generator:
             self._cuda = cuda
             self._model = self._load_model()
             self._corpus, self._ntokens = self._load_corpus(corpus_path)
-            self._resize_embs()
 
     def _load_model(self) -> torch.nn.Module:
         with open(self._model_path, 'rb') as f:
@@ -46,18 +46,8 @@ class Generator:
 
     def _load_corpus(self, corpus_path) -> Tuple[data.Corpus, int]:
         corpus = data.Corpus(corpus_path, self._cuda)
-        corpus.dictionary.add_word('<unk>')
         ntokens = len(corpus.dictionary)
         return corpus, ntokens
-
-    def _resize_embs(self):
-        corpus_embs_size = len(self._corpus.dictionary.word2idx)
-        model_embs_size = self._model.encoder.num_embeddings
-        diff = corpus_embs_size - model_embs_size
-        mean_emb = torch.mean(self._model.encoder.weight.data, 0)
-        for i in range(0, diff):
-            emb_copy = mean_emb.detach().clone()
-            self._model.encoder.weight.data = torch.cat((self._model.encoder.weight.data, emb_copy.unsqueeze(0)))
 
     def predict_nis(self, segmented_data, top_k=3):
         candidates = []
@@ -70,7 +60,7 @@ class Generator:
                 input_token = segmented_data[i]
                 idx = self._corpus.dictionary.word2idx.get(input_token)
                 if not idx:
-                    idx = self._corpus.dictionary.word2idx.get('<unk>')
+                    idx = random.choice(list(self._corpus.dictionary.word2idx.values()))
                 input_idxs_tensor.data.fill_(idx)
                 output, hidden = self._model(input_idxs_tensor, hidden)
                 if i != len(segmented_data) - 1:
