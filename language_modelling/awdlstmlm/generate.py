@@ -28,6 +28,7 @@ class Generator:
                  seed: int = SEED,
                  cuda: bool = True,
                  temperature: float = TEMPERATURE):
+        self._device = torch.device('cuda') if cuda else torch.device('cpu')
         if self._model is None or model_path != self._model_path:
             torch.cuda.manual_seed(seed) if cuda else torch.manual_seed(seed)
             self._model_path = model_path
@@ -38,7 +39,7 @@ class Generator:
 
     def _load_model(self) -> torch.nn.Module:
         with open(self._model_path, 'rb') as f:
-            model, _, _ = torch.load(f)
+            model, _, _ = torch.load(f, map_location=self._device)
         model.eval()
         model.cuda() if self._cuda else model.cpu()
         return model
@@ -53,7 +54,7 @@ class Generator:
         candidates = []
 
         with torch.no_grad():
-            input_idxs_tensor = torch.tensor([[0]]).to('cuda' if self._cuda else 'cpu')
+            input_idxs_tensor = torch.tensor([[0]]).to(self._device)
             hidden = self._model.init_hidden(input_idxs_tensor.size()[1])
 
             for i in range(len(segmented_data)):
