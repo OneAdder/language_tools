@@ -75,7 +75,7 @@ class Generator:
 
     def generate(self, input_str: str, output_len: int) -> str:
         user_input_tokens = input_str.split(",")
-        result = self.predict_nis(user_input_tokens, output_len)
+        result = self.predict_nis(user_input_tokens, output_len + 7)[6:]
         return ','.join(result)
 
 
