@@ -29,13 +29,14 @@ class Generator:
                  cuda: bool = True,
                  temperature: float = TEMPERATURE):
         self._device = torch.device('cuda') if cuda else torch.device('cpu')
+        self._temperature = temperature
         if self._model is None or model_path != self._model_path:
             torch.cuda.manual_seed(seed) if cuda else torch.manual_seed(seed)
             self._model_path = model_path
             self._cuda = cuda
             self._model = self._load_model()
             self._corpus, self._ntokens = self._load_corpus(corpus_path)
-            self._temperature = temperature
+            self._resize_embs()
 
     def _load_model(self) -> torch.nn.Module:
         with open(self._model_path, 'rb') as f:
@@ -51,7 +52,7 @@ class Generator:
 
     def _resize_embs(self):
         corpus_embs_size = len(self._corpus.dictionary.word2idx)
-        model_embs_size = len(self._model.encoder.num_embeddings)
+        model_embs_size = self._model.encoder.num_embeddings
         diff = corpus_embs_size - model_embs_size
         mean_emb = torch.mean(self._model.encoder.weight.data, 0)
         for i in range(0, diff):
