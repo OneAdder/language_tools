@@ -6,12 +6,12 @@ import re
 import waitress
 from time import time_ns
 from typing import List
-from flask import abort, Flask, jsonify, Response, request
+from flask import abort, Blueprint, Flask, jsonify, Response, request
 from flask_cors import CORS
 from segmentation.ncrffpp import NCRFpp
 from language_modelling.awdlstmlm.generate import Generator
 
-HOST = '127.0.0.1:5000'#'192.168.1.64:5000'
+HOST = '127.0.0.1:5000'
 PYTHON = os.environ.get('WEB_DEVELOPMENT_PROJECT_PYTHON') or '/usr/bin/python3'
 _ROOT = pathlib.Path(__file__).parent.resolve()
 ROOT = str(_ROOT)
@@ -24,6 +24,7 @@ if not UPLOADS.exists():
 app = Flask(__name__)
 CORS(app)
 myNCRFpp = NCRFpp(_ROOT / "models/ncrfpp/corpus_home", "ru_standard_v4", "models/ncrfpp/results", 10)
+api = Blueprint('api', __name__)
 
 
 def tokenize(input_text: str) -> List[str]:
@@ -60,7 +61,7 @@ def get_prediction(input_text: str) -> str:
     return result
 
 
-@app.after_request
+@api.after_request
 def log_response(response: Response) -> Response:
     logger = logging.getLogger('waitress')
     info = ' {host} {path} - {method} - {status}'.format(
@@ -70,12 +71,12 @@ def log_response(response: Response) -> Response:
     return response
 
 
-@app.route('/health')
+@api.route('/health')
 def health():
     return jsonify({'success': 'story'})
 
 
-@app.route('/get_suggestions', methods=['POST'])
+@api.route('/get_suggestions', methods=['POST'])
 def get_suggestions():
     logger = logging.getLogger('waitress')
     input_text = request.json.get('text')
@@ -84,6 +85,9 @@ def get_suggestions():
     logger.info(' Запрос на генерацию принят в обработку')
     result = get_prediction(input_text)
     return jsonify({'suggestions': result.split(',')})
+
+
+app.register_blueprint(api, url_prefix='/api')
 
 
 if __name__ == '__main__':
